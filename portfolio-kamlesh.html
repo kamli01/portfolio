@@ -1,0 +1,593 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Pixel Portfolio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400;600&family=VT323&display=swap">
+<style>
+/* Layout: a single-column "game UI". A hero window with a pixel scene, then stacked panels with notched 4px borders and hard drop shadows. */
+:root{
+  --bg:#dce6f4; --bg-grid:rgba(22,27,58,.06);
+  --surface:#ffffff; --surface-2:#eaf0fa;
+  --ink:#161b3a; --ink-2:#464f7d;
+  --line:#161b3a; --shadow:#161b3a;
+  --accent:#ff5d73; --accent-ink:#cf2848; --on-accent:#161b3a;
+  --blue:#3a56e8; --mint:#1fb87c; --sun:#ffd23f;
+  --seg-off:#cfd9ee; --soft:rgba(22,27,58,.22);
+  --sky-1:#6db6ff; --sky-2:#8bc8ff; --sky-3:#aedbff; --sky-4:#cdeeff;
+  --grass:#3ddc97; --grass-2:#2fc486; --dirt:#b9825a; --dirt-2:#a47049;
+  --cloud-o:1; --sun-d:block; --moon-d:none; --stars-o:0;
+  --font-display:'Press Start 2P',ui-monospace,Menlo,Consolas,monospace;
+  --font-body:'Pixelify Sans',ui-monospace,Menlo,Consolas,monospace;
+  --font-util:'VT323',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1226; --bg-grid:rgba(170,185,255,.05);
+    --surface:#1a1f45; --surface-2:#252c5e;
+    --ink:#eaf0ff; --ink-2:#aab5e8;
+    --line:#8e9cf0; --shadow:#3b49b8;
+    --accent:#ff6b81; --accent-ink:#ff7d91; --on-accent:#161b3a;
+    --blue:#7b90ff; --mint:#3ddc97; --sun:#ffd23f;
+    --seg-off:#2b3370; --soft:rgba(5,7,26,.4);
+    --sky-1:#151a45; --sky-2:#1b2255; --sky-3:#232b66; --sky-4:#2c3578;
+    --grass:#2aa874; --grass-2:#238f62; --dirt:#4a3a5c; --dirt-2:#3f3150;
+    --cloud-o:.16; --sun-d:none; --moon-d:block; --stars-o:1;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1226; --bg-grid:rgba(170,185,255,.05);
+  --surface:#1a1f45; --surface-2:#252c5e;
+  --ink:#eaf0ff; --ink-2:#aab5e8;
+  --line:#8e9cf0; --shadow:#3b49b8;
+  --accent:#ff6b81; --accent-ink:#ff7d91; --on-accent:#161b3a;
+  --blue:#7b90ff; --mint:#3ddc97; --sun:#ffd23f;
+  --seg-off:#2b3370; --soft:rgba(5,7,26,.4);
+  --sky-1:#151a45; --sky-2:#1b2255; --sky-3:#232b66; --sky-4:#2c3578;
+  --grass:#2aa874; --grass-2:#238f62; --dirt:#4a3a5c; --dirt-2:#3f3150;
+  --cloud-o:.16; --sun-d:none; --moon-d:block; --stars-o:1;
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{
+  margin:0;
+  font-family:var(--font-body); font-size:18px; line-height:1.6;
+  background-color:var(--bg); color:var(--ink);
+  background-image:linear-gradient(var(--bg-grid) 1px,transparent 1px),linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px);
+  background-size:16px 16px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0 32px;
+}
+.wrap{max-width:1080px;margin:0 auto}
+h1,h2,h3,p,ul,ol,dl,dd{margin:0}
+a{color:inherit}
+a,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+canvas.sprite{image-rendering:pixelated;image-rendering:crisp-edges;image-rendering:pixelated;display:block;max-width:100%}
+:focus-visible{outline:4px solid var(--blue);outline-offset:4px}
+
+/* Notched pixel border + hard shadow, shared by panels, buttons and chips */
+.px,.btn,.chip{
+  --b:4px; --off:8px;
+  box-shadow:
+    0 calc(var(--b) * -1) 0 0 var(--line),
+    0 var(--b) 0 0 var(--line),
+    calc(var(--b) * -1) 0 0 0 var(--line),
+    var(--b) 0 0 0 var(--line),
+    var(--off) var(--off) 0 0 var(--shadow);
+}
+.px{background:var(--surface);color:var(--ink)}
+
+.btn{
+  appearance:none;border:0;cursor:pointer;margin:4px;
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  padding:16px 20px;line-height:1;text-decoration:none;
+  font-family:var(--font-display);font-size:11px;letter-spacing:.04em;text-transform:uppercase;
+  background:var(--surface);color:var(--ink);
+  transition:transform .08s steps(2),box-shadow .08s steps(2);
+}
+@media (hover:hover){.btn:hover{transform:translate(-2px,-2px);--off:10px}}
+.btn:active{transform:translate(4px,4px);--off:4px}
+.btn.primary{background:var(--accent);color:var(--on-accent)}
+.btn.small{padding:12px 14px;font-size:10px}
+
+/* Header */
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px 28px;padding-block:28px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;font-family:var(--font-display);font-size:12px;letter-spacing:.04em}
+.top nav{display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px}
+.top nav a:not(.btn){font-family:var(--font-util);font-size:24px;line-height:1;text-transform:uppercase;text-decoration:none;padding:4px 0;box-shadow:0 4px 0 0 transparent}
+@media (hover:hover){.top nav a:not(.btn):hover{box-shadow:0 4px 0 0 var(--accent)}}
+
+/* Hero */
+.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:56px;align-items:center;padding-block:28px 72px}
+.status{display:inline-flex;align-items:center;gap:10px;padding:2px 14px;margin:4px;background:var(--surface-2);font-family:var(--font-util);font-size:22px;line-height:1.4;text-transform:uppercase}
+.dot{width:12px;height:12px;background:var(--mint);animation:blink 1.2s steps(1) infinite}
+h1{font-family:var(--font-display);font-weight:400;font-size:clamp(22px,4.6vw,38px);line-height:1.4;letter-spacing:-.01em;margin:28px 0 22px;text-wrap:balance}
+h1 .hl{color:var(--accent-ink)}
+.lead{font-size:20px;max-width:46ch;color:var(--ink-2)}
+.prompt{margin-top:20px;font-family:var(--font-util);font-size:24px;color:var(--ink-2)}
+.prompt::after{content:"_";animation:blink 1s steps(1) infinite}
+.cta{display:flex;flex-wrap:wrap;gap:16px;margin-top:28px}
+
+.win{margin:4px}
+.win-bar{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--ink);color:var(--bg);font-family:var(--font-util);font-size:22px;line-height:1}
+.win-bar i{width:12px;height:12px;display:block}
+.win-bar i:nth-child(1){background:var(--accent)}
+.win-bar i:nth-child(2){background:var(--sun)}
+.win-bar i:nth-child(3){background:var(--mint)}
+.win-bar span{margin-left:8px}
+.scene{position:relative;height:300px;overflow:hidden;
+  background:linear-gradient(var(--sky-1) 0 25%,var(--sky-2) 25% 50%,var(--sky-3) 50% 75%,var(--sky-4) 75%)}
+.scene .sprite,.scene .stars{position:absolute}
+.sun{top:34px;right:34px;display:var(--sun-d)}
+.moon{top:30px;right:34px;display:var(--moon-d)}
+.stars{top:22px;left:22px;width:4px;height:4px;background:#fff;opacity:var(--stars-o);
+  box-shadow:60px 40px 0 #fff,120px 10px 0 #cfd8ff,180px 76px 0 #fff,240px 26px 0 #fff,300px 64px 0 #cfd8ff,40px 96px 0 #cfd8ff,210px 120px 0 #fff,330px 12px 0 #fff}
+.cloud{left:-80px;opacity:var(--cloud-o)}
+.c1{top:64px;animation:drift 36s steps(72) infinite linear}
+.c2{top:132px;animation:drift 52s steps(104) infinite linear;animation-delay:-22s}
+.ground{position:absolute;left:0;right:0;bottom:0;height:72px;
+  background:
+    linear-gradient(90deg,var(--dirt-2) 0 8px,transparent 8px) 0 44px/32px 8px repeat-x,
+    linear-gradient(90deg,var(--dirt-2) 0 8px,transparent 8px) 16px 60px/32px 8px repeat-x,
+    linear-gradient(var(--grass) 0 16px,var(--grass-2) 16px 20px,var(--dirt) 20px)}
+.hero-shadow{position:absolute;left:50%;bottom:64px;width:112px;height:8px;margin-left:-56px;background:var(--soft)}
+.hero-avatar{left:50%;bottom:72px;margin-left:-80px;animation:bob 1s steps(1) infinite}
+.coin{animation:bob 1.2s steps(1) infinite}
+.coin.a{left:14%;bottom:128px}
+.coin.b{left:calc(50% - 16px);bottom:252px;animation-delay:-.4s}
+.coin.c{right:14%;bottom:150px;animation-delay:-.8s}
+
+@keyframes blink{50%{opacity:0}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes drift{from{transform:translateX(-60px)}to{transform:translateX(620px)}}
+
+/* Sections */
+.section{padding-block:56px}
+h2{display:flex;align-items:center;gap:16px;margin-bottom:32px;font-family:var(--font-display);font-weight:400;font-size:clamp(16px,3vw,22px);line-height:1.3}
+h2::before{content:"";flex:none;width:16px;height:16px;background:var(--accent);box-shadow:4px 4px 0 0 var(--shadow)}
+
+/* About */
+.about{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:48px;align-items:start}
+.card{padding:24px;margin:4px}
+.avatar-tile{display:grid;place-items:center;padding:20px;background:linear-gradient(#8bc8ff 0 50%,#aedbff 50%);margin-bottom:20px}
+.stats{display:grid;gap:0}
+.stats div{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:2px dashed var(--seg-off)}
+.stats div:last-child{border-bottom:0}
+.stats dt{font-family:var(--font-util);font-size:22px;line-height:1.3;text-transform:uppercase;color:var(--ink-2)}
+.stats dd{text-align:right;font-weight:600;line-height:1.4}
+.about-text{display:grid;gap:20px;max-width:62ch;font-size:19px}
+.about-text p:first-child{font-size:22px;line-height:1.5}
+
+/* Skills */
+.skills-panel{padding:32px;margin:4px}
+.skills{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 48px}
+.skill-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px;font-weight:600}
+.lv{font-family:var(--font-util);font-size:22px;line-height:1;color:var(--ink-2)}
+.bar{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;height:18px}
+.bar i{display:block;background:var(--seg-off)}
+.bar i.on{background:var(--blue)}
+.side{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;margin-top:32px;padding-top:24px;border-top:4px solid var(--seg-off)}
+.side b{font-family:var(--font-util);font-weight:400;font-size:22px;text-transform:uppercase;color:var(--ink-2);margin-right:4px}
+.side span{font-family:var(--font-util);font-size:22px;line-height:1;padding:6px 10px;background:var(--surface-2)}
+
+/* Projects */
+.filters{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:36px}
+.chip{--off:4px;appearance:none;border:0;cursor:pointer;margin:4px;padding:8px 16px;line-height:1;
+  font-family:var(--font-util);font-size:24px;text-transform:uppercase;background:var(--surface);color:var(--ink)}
+.chip:hover{background:var(--surface-2)}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.count{margin-left:auto;font-family:var(--font-util);font-size:22px;color:var(--ink-2)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:36px}
+.proj{display:flex;flex-direction:column;min-width:0;margin:4px;transition:transform .12s steps(2),box-shadow .12s steps(2)}
+@media (hover:hover){.proj:hover{transform:translate(-4px,-4px);--off:12px}}
+.proj .tile{display:grid;place-items:center;height:132px;background:var(--t,#2a3566)}
+.proj .body{display:flex;flex-direction:column;gap:12px;padding:20px;flex:1}
+.cat{font-family:var(--font-util);font-size:22px;line-height:1;text-transform:uppercase;color:var(--accent-ink)}
+.proj h3{font-family:var(--font-body);font-weight:600;font-size:24px;line-height:1.2}
+.proj p{color:var(--ink-2);font-size:17px;line-height:1.55}
+.tags{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0}
+.tags li{font-family:var(--font-util);font-size:20px;line-height:1.2;padding:2px 8px;background:var(--surface-2);color:var(--ink-2)}
+.proj .more{margin-top:auto;padding:12px 0 6px;align-self:flex-start;font-family:var(--font-display);font-size:10px;line-height:1.6;text-decoration:underline;text-decoration-thickness:4px;text-underline-offset:6px;text-decoration-color:var(--accent)}
+
+/* Quest log */
+.quest{list-style:none;padding:0 0 0 36px;position:relative;display:grid;gap:32px;max-width:760px}
+.quest::before{content:"";position:absolute;left:8px;top:8px;bottom:8px;width:4px;background:var(--line)}
+.quest li{position:relative;min-width:0}
+.quest li::before{content:"";position:absolute;left:-36px;top:4px;width:20px;height:20px;background:var(--surface);box-shadow:0 0 0 4px var(--line)}
+.quest li.now::before{background:var(--mint)}
+.when{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-family:var(--font-util);font-size:24px;line-height:1.1;color:var(--ink-2);text-transform:uppercase}
+.badge{padding:2px 8px;background:var(--mint);color:#161b3a;font-size:20px}
+.quest h3{font-family:var(--font-body);font-weight:600;font-size:22px;line-height:1.3;margin:4px 0 6px}
+.quest p{color:var(--ink-2);max-width:58ch}
+
+/* Contact */
+.contact{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;padding:36px;margin:4px;align-items:start}
+.contact h3{font-family:var(--font-display);font-weight:400;font-size:clamp(18px,3vw,26px);line-height:1.4;margin-bottom:16px;text-wrap:balance}
+.contact p{color:var(--ink-2);max-width:44ch}
+.mail{display:grid;gap:16px}
+.lab{font-family:var(--font-util);font-size:22px;line-height:1;text-transform:uppercase;color:var(--ink-2)}
+.addr{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px}
+.addr code{font-family:var(--font-util);font-size:28px;line-height:1.2;padding:6px 12px;background:var(--surface-2);overflow-wrap:anywhere;user-select:all}
+.links{display:flex;flex-wrap:wrap;gap:12px;list-style:none;padding:0}
+
+.handles{font-family:var(--font-util);font-size:24px;line-height:1.4;overflow-wrap:anywhere}
+footer{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px 24px;padding-top:40px;font-family:var(--font-util);font-size:22px;color:var(--ink-2)}
+footer a{text-decoration-thickness:3px;text-decoration-color:var(--accent);text-underline-offset:5px}
+
+@media (max-width:860px){
+  .hero{grid-template-columns:minmax(0,1fr);gap:48px;padding-bottom:48px}
+  .about{grid-template-columns:minmax(0,1fr);gap:36px}
+  .contact{grid-template-columns:minmax(0,1fr);gap:28px;padding:28px 24px}
+}
+@media (max-width:960px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  body{font-size:17px}
+  .top{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 16px;padding-block:20px 8px}
+  .top nav{grid-column:1 / -1;grid-row:2;width:100%;justify-content:space-between;gap:0 12px}
+  .top nav a:not(.btn){padding:12px 0}
+  .btn.small{min-height:44px}
+  .btn{min-height:48px}
+  .hero{padding-block:16px 40px;gap:40px}
+  .cta .btn{flex:1 1 auto}
+  .section{padding-block:40px}
+  h2{margin-bottom:24px}
+  .card,.contact{padding-inline:20px}
+  .links .btn{flex:1 1 auto}
+  .skills{grid-template-columns:minmax(0,1fr)}
+  .skills-panel{padding:24px 20px}
+  .count{margin-left:0;width:100%}
+  .about-text p:first-child{font-size:20px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  html{scroll-behavior:auto}
+  .c1{left:8%}
+  .c2{left:52%}
+}
+</style>
+
+<div class="wrap" id="top">
+  <header class="top">
+    <a class="brand" href="#top" aria-label="Kamlesh, back to top">
+      <canvas class="sprite" data-sprite="heart" data-scale="3" aria-hidden="true"></canvas>
+      <span>KAMLESH</span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#about">About</a>
+      <a href="#skills">Skills</a>
+      <a href="#projects">Projects</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <button class="btn small" id="theme" type="button">Go dark</button>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hello">
+      <div>
+        <p class="status px"><span class="dot" aria-hidden="true"></span>My portfolio</p>
+        <h1 id="hello">Hi, I'm <span class="hl">Kamlesh</span>. I turn data into clear answers.</h1>
+        <p class="lead">I work with Python, SQL and Power BI to find the patterns behind customer and credit data, then explain them in plain language.</p>
+        <p class="prompt" aria-hidden="true">&gt; python analyze.py</p>
+        <div class="cta">
+          <a class="btn primary" href="#projects">See my work</a>
+          <a class="btn" href="https://www.linkedin.com/in/kamlesh-supe-1ab824223" target="_blank" rel="noreferrer">Get in touch</a>
+        </div>
+      </div>
+
+      <div class="win px" role="img" aria-label="A pixel-art scene: a small character with headphones standing on grass, with clouds drifting by and coins floating above.">
+        <div class="win-bar" aria-hidden="true"><i></i><i></i><i></i><span>kamlesh.exe</span></div>
+        <div class="scene" aria-hidden="true">
+          <div class="stars"></div>
+          <canvas class="sprite sun" data-sprite="sun" data-scale="6"></canvas>
+          <canvas class="sprite moon" data-sprite="moon" data-scale="6"></canvas>
+          <canvas class="sprite cloud c1" data-sprite="cloud" data-scale="6"></canvas>
+          <canvas class="sprite cloud c2" data-sprite="cloud" data-scale="4"></canvas>
+          <canvas class="sprite coin a" data-sprite="coin" data-scale="4"></canvas>
+          <canvas class="sprite coin b" data-sprite="coin" data-scale="4"></canvas>
+          <canvas class="sprite coin c" data-sprite="coin" data-scale="4"></canvas>
+          <div class="ground"></div>
+          <div class="hero-shadow"></div>
+          <canvas class="sprite hero-avatar" data-sprite="avatar" data-scale="10"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="about" aria-labelledby="about-h">
+      <h2 id="about-h">About</h2>
+      <div class="about">
+        <div class="card px">
+          <div class="avatar-tile"><canvas class="sprite" data-sprite="avatar" data-scale="8" role="img" aria-label="Pixel portrait of Kamlesh"></canvas></div>
+          <dl class="stats">
+            <div><dt>Class</dt><dd>Data analytics</dd></div>
+            <div><dt>Main</dt><dd>Python</dd></div>
+            <div><dt>Tools</dt><dd>SQL, Power BI</dd></div>
+            <div><dt>Next up</dt><dd>Data science</dd></div>
+            <div><dt>Side quest</dt><dd>Figma</dd></div>
+          </dl>
+        </div>
+        <div class="about-text">
+          <p>I like turning messy tables into answers people can act on: who buys what, which customers behave alike, and which borrowers are more likely to default.</p>
+          <p>My toolkit is Python, SQL with PostgreSQL, and Power BI for dashboards. I'm still building depth in each of them, and every project pushes them a little further.</p>
+          <p>Lately I've been exploring NLP, from scraping reviews to scoring them with a pretrained BERT model. Data science is where I'm heading next, and I enjoy design on the side with Figma.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="skills" aria-labelledby="skills-h">
+      <h2 id="skills-h">Skills</h2>
+      <div class="skills-panel px">
+        <div class="skills" id="skills-list"></div>
+        <div class="side">
+          <b>Used in my projects</b>
+          <span>PostgreSQL</span><span>SQL</span><span>Power BI</span><span>Web scraping</span><span>NLP</span><span>BERT</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="projects" aria-labelledby="projects-h">
+      <h2 id="projects-h">Projects</h2>
+      <div class="grid" id="grid"></div>
+    </section>
+
+    <section class="section" id="contact" aria-labelledby="contact-h">
+      <h2 id="contact-h">Contact</h2>
+      <div class="contact px">
+        <div>
+          <h3>Let's talk data</h3>
+          <p>Have a question about my projects, or something you'd like analysed? Message me on LinkedIn, or browse my code on GitHub.</p>
+        </div>
+        <div class="mail">
+          <span class="lab">Find me online</span>
+          <ul class="links">
+            <li><a class="btn small" href="https://www.linkedin.com/in/kamlesh-supe-1ab824223" target="_blank" rel="noreferrer">LinkedIn</a></li>
+            <li><a class="btn small" href="https://github.com/kamli01" target="_blank" rel="noreferrer">GitHub</a></li>
+          </ul>
+          <p class="handles">github.com/kamli01<br>linkedin.com/in/kamlesh-supe-1ab824223</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>© 2026 Kamlesh. Built from rectangles.</span>
+    <a href="#top">Back to top</a>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var PAL={k:'#141a3a',h:'#7a4dd8',s:'#ffcf9f',y:'#ffd23f',r:'#ff5d73',a:'#4361ee',b:'#5b7bff',w:'#ffffff',g:'#3ddc97',m:'#fff1b8'};
+  var SPR={
+    avatar:[
+      "....kkkkkkkk....",
+      "...khhhhhhhhk...",
+      "..khhhhhhhhhhk..",
+      "..khhhhhhhhhhk..",
+      ".kyhhsssssshhyk.",
+      ".kyhsskssksshyk.",
+      ".kyhsskssksshyk.",
+      ".kkhsssssssshkk.",
+      "...ksssrrsssk...",
+      "....kksssskk....",
+      ".....kssssk.....",
+      "..kkaaaaaaaakk..",
+      ".kaaaaaaaaaaaak.",
+      ".kaaaawwwwaaaak.",
+      ".kaaaaaaaaaaaak.",
+      ".kkkkkkkkkkkkkk."
+    ],
+    heart:[
+      ".rr..rr.",
+      "rwrrrrrr",
+      "rrrrrrrr",
+      "rrrrrrrr",
+      ".rrrrrr.",
+      "..rrrr..",
+      "...rr..."
+    ],
+    coin:[
+      "..kkkk..",
+      ".kyyyyk.",
+      "kyywwyyk",
+      "kyywyyyk",
+      "kyyyyyyk",
+      "kyyyyyyk",
+      ".kyyyyk.",
+      "..kkkk.."
+    ],
+    cloud:[
+      "....wwww......",
+      "..wwwwwwww.ww.",
+      ".wwwwwwwwwwwww",
+      "wwwwwwwwwwwwww",
+      ".wwwwwwwwwwww."
+    ],
+    sun:[
+      ".....yy.....",
+      ".y...yy...y.",
+      "..y.yyyy.y..",
+      "...yyyyyy...",
+      "..yyyyyyyy..",
+      "yy.yyyyyy.yy",
+      "yy.yyyyyy.yy",
+      "..yyyyyyyy..",
+      "...yyyyyy...",
+      "..y.yyyy.y..",
+      ".y...yy...y.",
+      ".....yy....."
+    ],
+    moon:[
+      "...mmmm...",
+      "..mmmm....",
+      ".mmmm.....",
+      ".mmmm.....",
+      ".mmmm.....",
+      ".mmmm.....",
+      ".mmmm.....",
+      "..mmmm....",
+      "...mmmmm..",
+      ".....mmm.."
+    ],
+    rocket:[
+      ".....kk.....",
+      "....kwwk....",
+      "...kwwwwk...",
+      "...kwbbwk...",
+      "...kwbbwk...",
+      "...kwwwwk...",
+      "..kkwwwwkk..",
+      ".krkwwwwkrk.",
+      ".krkkkkkkrk.",
+      "..k.kyyk.k..",
+      ".....kyyk...",
+      "......kk...."
+    ],
+    chart:[
+      "w...........",
+      "w.......rr..",
+      "w.......rr..",
+      "w.......rr..",
+      "w....yy.rr..",
+      "w....yy.rr..",
+      "w....yy.rr..",
+      "w.bb.yy.rr..",
+      "w.bb.yy.rr..",
+      "w.bb.yy.rr..",
+      "w.bb.yy.rr..",
+      "wwwwwwwwwwww"
+    ],
+    chat:[
+      ".kkkkkkkkkk.",
+      "kwwwwwwwwwwk",
+      "kwgggwwwwwwk",
+      "kwwwwwwwwwwk",
+      "kwggggggwwwk",
+      "kwwwwwwwwwwk",
+      "kwgggggwwwwk",
+      "kwwwwwwwwwwk",
+      ".kkkkkkkkkk.",
+      "..kwk.......",
+      "..kk........"
+    ],
+    pad:[
+      "..kkkkkkkk..",
+      ".kbbbbbbbbk.",
+      "kbbbwbbbbybk",
+      "kbbwwwbbyryk",
+      "kbbbwbbbbybk",
+      "kbbbbbbbbbbk",
+      ".kbbbbbbbbk.",
+      "..kkkkkkkk.."
+    ],
+    cart:[
+      "ww..........",
+      ".w..........",
+      ".w.yyyyyyyy.",
+      ".w.yyyyyyyy.",
+      ".w..yyyyyy..",
+      ".w..yyyyyy..",
+      ".w...yyyy...",
+      ".wwwwwwwwww.",
+      "...w....w...",
+      "..rrr..rrr..",
+      "..rrr..rrr.."
+    ],
+    smile:[
+      "...kkkkkk...",
+      "..kyyyyyyk..",
+      ".kyyyyyyyyk.",
+      "kyyykyykyyyk",
+      "kyyykyykyyyk",
+      "kyyyyyyyyyyk",
+      "kyykyyyykyyk",
+      "kyyykkkkyyyk",
+      ".kyyyyyyyyk.",
+      "..kyyyyyyk..",
+      "...kkkkkk..."
+    ],
+    tiles:[
+      "kkkkkkkkkkkk",
+      "krrrrrbbbbbk",
+      "krrrrrbbbbbk",
+      "krrrrrbbbbbk",
+      "krrrrrbbbbbk",
+      "krrrrrbbbbbk",
+      "kyyyyygggggk",
+      "kyyyyygggggk",
+      "kyyyyygggggk",
+      "kyyyyygggggk",
+      "kyyyyygggggk",
+      "kkkkkkkkkkkk"
+    ]
+  };
+
+  function paint(cv){
+    var rows=SPR[cv.dataset.sprite]; if(!rows) return;
+    var s=+cv.dataset.scale||4, h=rows.length, w=rows[0].length;
+    cv.width=w; cv.height=h;
+    cv.style.width=(w*s)+'px'; cv.style.height=(h*s)+'px';
+    var c=cv.getContext('2d');
+    for(var y=0;y<h;y++){
+      for(var x=0;x<w;x++){
+        var ch=rows[y].charAt(x);
+        if(ch!=='.'){ c.fillStyle=PAL[ch]; c.fillRect(x,y,1,1); }
+      }
+    }
+  }
+  function paintAll(root){ root.querySelectorAll('canvas[data-sprite]').forEach(paint); }
+
+  /* Skills */
+  var SKILLS=[['Python',6],['Data analytics',6],['Data science',4],['Figma',5]];
+  var sl=document.getElementById('skills-list');
+  SKILLS.forEach(function(s){
+    var d=document.createElement('div'); d.className='skill';
+    var segs=''; for(var i=0;i<10;i++){ segs+='<i'+(i<s[1]?' class="on"':'')+'></i>'; }
+    d.innerHTML='<div class="skill-head"><span>'+s[0]+'</span><span class="lv">'+s[1]+'/10</span></div>'+
+                '<div class="bar" role="img" aria-label="'+s[0]+', '+s[1]+' out of 10">'+segs+'</div>';
+    sl.appendChild(d);
+  });
+
+  /* Projects */
+  var PROJECTS=[
+    {n:'Customer Shopping Behavior Analysis',c:'Retail analytics',sp:'cart',t:'#2a3566',
+     d:'Analyzed customer shopping behavior using Python, PostgreSQL, and Power BI to uncover purchasing patterns, customer segments, and actionable business insights.',
+     tags:['Python','PostgreSQL','Power BI'],u:'https://github.com/kamli01/Customer-Behavior-Analysis'},
+    {n:'Loan Default Analysis',c:'Credit risk',sp:'chart',t:'#4a2b66',
+     d:'Analyzed loan default patterns using SQL and Power BI to identify borrower risk factors, segment customers, and support data-driven lending decisions.',
+     tags:['SQL','Power BI'],u:'https://github.com/kamli01/Loan_default_analysis'},
+    {n:'Sentiment Analyser',c:'NLP',sp:'smile',t:'#1d5560',
+     d:'Built a Python-based Yelp review sentiment analyzer using web scraping, NLP, and pretrained BERT to classify reviews on a 1–5 sentiment scale.',
+     tags:['Python','Web scraping','NLP','BERT'],u:'https://github.com/kamli01/sentiment-analyser'}
+  ];
+  var grid=document.getElementById('grid');
+  PROJECTS.forEach(function(p){
+    var a=document.createElement('article'); a.className='px proj';
+    a.innerHTML=
+      '<div class="tile" style="--t:'+p.t+'"><canvas class="sprite" data-sprite="'+p.sp+'" data-scale="7" aria-hidden="true"></canvas></div>'+
+      '<div class="body"><span class="cat">'+p.c+'</span><h3>'+p.n+'</h3><p>'+p.d+'</p>'+
+      '<ul class="tags">'+p.tags.map(function(t){return '<li>'+t+'</li>';}).join('')+'</ul>'+
+      '<a class="more" href="'+p.u+'" target="_blank" rel="noreferrer">View code &gt;</a></div>';
+    grid.appendChild(a);
+  });
+
+  /* Sprites everywhere else */
+  paintAll(document);
+
+  /* Theme toggle */
+  var root=document.documentElement, mq=window.matchMedia('(prefers-color-scheme: dark)'), tbtn=document.getElementById('theme');
+  function cur(){ return root.dataset.theme || (mq.matches ? 'dark' : 'light'); }
+  function label(){ tbtn.textContent = cur()==='dark' ? 'Go light' : 'Go dark'; }
+  tbtn.addEventListener('click',function(){ root.dataset.theme = cur()==='dark' ? 'light' : 'dark'; label(); });
+  if(mq.addEventListener){ mq.addEventListener('change',label); }
+  label();
+
+})();
+</script>
+
+</body></html>
